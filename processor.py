@@ -89,8 +89,6 @@ class RuleEngine():
 def main():
     args = parse_args()
 
-    config = None
-
     with open(args.config) as config_file:
         config = json.load(config_file)
     
