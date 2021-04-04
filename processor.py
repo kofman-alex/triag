@@ -93,10 +93,6 @@ def main():
 
     with open(args.config) as config_file:
         config = json.load(config_file)
-
-    if not config:
-        logging.error("Cannot load config. Abort.")
-        sys.exit(1)
     
     rule_engine = RuleEngine(config.get('connectURL'))
 
