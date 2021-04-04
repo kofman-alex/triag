@@ -1,0 +1,15 @@
+secrets/
+
+# External files that should not be committed/shared
+external_samples/
+
+# Python specific
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+
+# vscode
+.vscode/

@@ -32,7 +32,7 @@ The expected delivery is to build a service that will connect to a Data base –
 4. For every matching rule, the service writes an alert record to the `alerts` database. Structure of an alert is:
    - priority (int > 0)
    - rule id
-   - message - a human readable description of the service
+   - message - a human readable description of the alert
 
 ## Questions
 
