@@ -4,6 +4,7 @@ from argparse import ArgumentParser
 import json
 import sys
 from datetime import datetime
+from string import Template
 
 class ProcessorError(BaseException):
     def __init__(self, message):
@@ -24,8 +25,9 @@ def parse_args():
     return parser.parse_args()
 
 class RuleEngine():
-    def __init__(self, connect_url):
-        self._connect_url = connect_url
+    def __init__(self, config):
+        self._connect_url = config.get('connectURL')
+        self._schema = config.get('schema')
         self._connection = None
     
     def _connect(self):
@@ -45,20 +47,23 @@ class RuleEngine():
         try:
             self._connect()
             
-            get_rules = self._connection.prepare('select * from rules')
+            get_rules = self._connection.prepare(f'select * from {self._schema}.rules')
             
-            self._insert_alert = self._connection.prepare('insert into alerts (user_id, time, rule_id, msg) values($1::integer, $2::timestamp with time zone, $3::integer, $4)')
+            self._insert_alert = self._connection.prepare(f'insert into {self._schema}.alerts (user_id, time, rule_id, msg) values($1::integer, $2::timestamp with time zone, $3::integer, $4)')
 
             self._ruleset = []
             
             with self._connection.xact():
                 for rule in get_rules.rows():
                     logging.debug(f'Add rule {rule[0]}: {rule[2]}')
+
+                    rule_expr = Template(rule[3]).substitute({'schema': self._schema})
+
                     self._ruleset.append({
                         'rule_id': rule[0],
                         'rule_priority': rule[1],
                         'summary': rule[2],
-                        'expr': self._connection.prepare(rule[3]),
+                        'expr': self._connection.prepare(rule_expr),
                         'msg': rule[4]
                     })
                     logging.debug('ok')
@@ -92,7 +97,7 @@ def main():
     with open(args.config) as config_file:
         config = json.load(config_file)
     
-    rule_engine = RuleEngine(config.get('connectURL'))
+    rule_engine = RuleEngine(config)
 
     rule_engine.load_rules()
 

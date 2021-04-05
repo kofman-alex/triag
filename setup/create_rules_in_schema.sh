@@ -1,4 +1,5 @@
 #!/bin/bash
+
 CONN_URL=$1
 
 if [[ -z ${SCHEMA} ]]; then
@@ -6,12 +7,10 @@ if [[ -z ${SCHEMA} ]]; then
     exit 1
 fi
 
-echo "Creating tables in schema '${SCHEMA}'"
+echo "Creating rules in schema '${SCHEMA}'"
 
 psql ${CONN_URL} << EOF
-drop schema if exists ${SCHEMA} cascade;
-create schema ${SCHEMA};
 set schema '${SCHEMA}';
-\i setup.sql
+\i create_rules.sql
 EOF
 
