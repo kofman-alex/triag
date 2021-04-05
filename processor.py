@@ -26,7 +26,7 @@ def parse_args():
 
 class RuleEngine():
     def __init__(self, config):
-        self._connect_url = config.get('connectURL')
+        self._connect_url = config.get('connect_url')
         self._schema = config.get('schema')
         self._connection = None
     
