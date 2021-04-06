@@ -26,14 +26,14 @@ def parse_args():
 
 class RuleEngine():
     def __init__(self, config):
-        self._connect_url = config.get('connect_url')
+        self._connect_params = config.get('connectParams')
         self._schema = config.get('schema')
         self._connection = None
     
     def _connect(self):
         if not self._connection or self._connection.closed:
             logging.debug('Connecting...')
-            self._connection = postgresql.open(self._connect_url)
+            self._connection = postgresql.open(**self._connect_params)
             logging.debug('Connected.')
     
     def __del__(self):

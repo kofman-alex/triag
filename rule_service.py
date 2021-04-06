@@ -12,7 +12,12 @@ def init_rule_engine():
     global rule_engine
 
     config = {
-        'connect_url': os.environ.get('CONNECT_URL'),
+        'connectParams': {
+            'user': os.environ.get('USER'),
+            'password': os.environ.get('PASSWORD'),
+            'database': os.environ.get('DATABASE'),
+            'unix': os.environ.get('UNIX_SOCKET')
+        },
         'schema': os.environ.get('SCHEMA')
     }
 
