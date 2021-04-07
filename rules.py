@@ -49,9 +49,9 @@ class RuleEngine():
             
             get_rules = self._connection.prepare(f'select * from {self._schema}.rules')
             
-            self._insert_alert = self._connection.prepare(f'insert into {self._schema}.alerts (user_id, time, rule_id, msg) values($1::integer, $2::timestamp with time zone, $3::integer, $4)')
+            self._insert_alert = self._connection.prepare(f'insert into {self._schema}.alerts (user_id, time, rule_id, msg) values($1::integer, $2::timestamp with time zone, $3, $4)')
 
-            self._ruleset = []
+            self._ruleset = {}
             
             with self._connection.xact():
                 for rule in get_rules.rows():
@@ -59,13 +59,13 @@ class RuleEngine():
 
                     rule_expr = Template(rule[3]).substitute({'schema': self._schema})
 
-                    self._ruleset.append({
+                    self._ruleset[rule[0]] = {
                         'rule_id': rule[0],
                         'rule_priority': rule[1],
                         'summary': rule[2],
                         'expr': self._connection.prepare(rule_expr),
                         'msg': rule[4]
-                    })
+                    }
                     logging.debug('ok')
             
         except:
@@ -74,11 +74,17 @@ class RuleEngine():
             raise ProcessorError(f'Cannot load rules: {e}')
         
     def execute_ruleset(self):
-        for rule in self._ruleset:
-            self.execute_rule(rule) 
+        for rule_id in self._ruleset.keys():
+            self.execute_rule(rule_id) 
 
-    def execute_rule(self, rule):
-        logging.debug(f'Evaluate rule {rule.get("rule_id")}:{rule.get("summary")}')
+    def execute_rule(self, rule_id):
+        rule = self._ruleset.get(rule_id)
+        
+        if not rule:
+            raise Exception(f'rule {rule_id} not found.')
+
+        logging.debug(f'Evaluate rule {rule_id}')
+        
         with self._connection.xact():
             timestamp = datetime.now().astimezone()
 
