@@ -79,8 +79,7 @@ class RuleEngine():
 
     def execute_rule(self, rule):
         logging.debug(f'Evaluate rule {rule.get("rule_id")}:{rule.get("summary")}')
-        with self._connection.xact() as x:
-            x.start()
+        with self._connection.xact():
             timestamp = datetime.now().astimezone()
 
             for res in rule.get('expr').rows():
@@ -88,7 +87,6 @@ class RuleEngine():
 
                 self._insert_alert(res[0], timestamp, rule.get('rule_id'), rule.get('msg'))
             
-            x.commit()
         logging.debug('done.')
 
 def main():
