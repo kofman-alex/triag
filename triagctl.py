@@ -4,6 +4,7 @@ import sys
 from argparse import ArgumentParser
 import json
 from datetime import datetime
+import os
 
 event_row_template = ' {:>10} | {:20s} | {:^25s} | {:20s} | {:50s} '
 event_header_bottom_template = ' {:>10} + {:20s} + {:^25s} + {:20s} + {:50s} '
@@ -45,13 +46,22 @@ def _get_alerts(dbclient:DBClient, args):
     for alert in rows:
         print(alert2str(alert))
 
+def _clear_events(dbclient:DBClient, args):
+    dbclient.clear_events()
+
+def _clear_alerts(dbclient:DBClient, args):
+    dbclient.clear_alerts()
+
+def _clear_all(dbclient:DBClient, args):
+    dbclient.clear_all()
+
 commands = {
     'add-event': _add_event,
     'get-events': _get_events,
     'get-alerts': _get_alerts,
-    # 'clear-events': _clear_events,
-    # 'clear-alerts': _clear_alerts,
-    # 'clear-all': _clear_all
+    'clear-events': _clear_events,
+    'clear-alerts': _clear_alerts,
+    'clear-all': _clear_all
 }
 
 def parse_args():
@@ -101,10 +111,19 @@ def parse_args():
         help='Event description'
     )
 
+    parser.add_argument(
+        "--debug",
+        action='store_true',
+        help='Print debug information'
+    )
+
     return parser.parse_args()
 
 def main():
     args = parse_args()
+
+    if args.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
     
     config = None
     with open(args.config) as config_file:
@@ -122,6 +141,5 @@ def main():
 
 
 if __name__ == '__main__':
-    logging.getLogger().setLevel(logging.DEBUG)
     main()
 

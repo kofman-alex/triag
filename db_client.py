@@ -89,3 +89,37 @@ class DBClient():
             e = sys.exc_info()[1]
             logging.error(f'Error: {e}')    
             raise DBError(e)
+
+    def clear_events(self):
+        logging.debug('Clear events')
+        try:
+            self._connect()
+            with self._connection.xact():
+                self._clear_events()
+        except:
+            e = sys.exc_info()[1]
+            logging.error(f'Error: {e}')    
+            raise DBError(e)
+            
+    def clear_alerts(self):
+        logging.debug('Clear alerts')
+        try:
+            self._connect()
+            with self._connection.xact():
+                self._clear_alerts()
+        except:
+            e = sys.exc_info()[1]
+            logging.error(f'Error: {e}')    
+            raise DBError(e)
+
+    def clear_all(self):
+        logging.debug('Clear all events and alerts')
+        try:
+            self._connect()
+            with self._connection.xact():
+                self._clear_events()
+                self._clear_alerts()
+        except:
+            e = sys.exc_info()[1]
+            logging.error(f'Error: {e}')    
+            raise DBError(e)
