@@ -3,7 +3,7 @@ import logging
 import sys
 from argparse import ArgumentParser
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 
 event_row_template = ' {:>10} | {:20s} | {:^25s} | {:20s} | {:50s} '
@@ -18,7 +18,7 @@ header_alerts = f'{event_row_template.format("alert_id", "user_id", "time", "rul
 {alert_header_bottom_template.format("-"*10,"-"*20,"-"*25,"-"*20,"-"*60)}'
 
 def event2str(event):
-    return event_row_template.format(event[0], event[1], event[2].isoformat(), event[3], event[4])
+    return event_row_template.format(event[0], event[1], event[2].replace(microsecond=0).isoformat(), event[3], event[4])
 
 def alert2str(alert):
     return alert_row_template.format(alert[0], alert[1], alert[2].replace(microsecond=0).isoformat(), alert[3], alert[4])
@@ -55,13 +55,56 @@ def _clear_alerts(dbclient:DBClient, args):
 def _clear_all(dbclient:DBClient, args):
     dbclient.clear_all()
 
+# 25 hours of inactivity
+def _scenario_inactivity(dbclient:DBClient):
+    timestamp = datetime.now().astimezone()
+    dbclient.insert_event('1', timestamp - timedelta(hours=25), 'steps', '10000')
+
+# missing medications 3 days in a row
+def _scenario_missing_medication(dbclient:DBClient):
+    timestamp = datetime.now().astimezone()
+    dbclient.insert_event('1', timestamp - timedelta(days=3), 'medication', 'done')
+    dbclient.insert_event('1', timestamp - timedelta(hours=2), 'water', '3 cups')
+
+# PRO increasing 3 days in a row
+def _scenario_pro_deterioration(dbclient:DBClient):
+    timestamp = datetime.now().astimezone()
+    dbclient.insert_event('1', timestamp - timedelta(days=2), 'PRO', '10 - Low')
+    dbclient.insert_event('1', timestamp - timedelta(days=1), 'PRO', '15 - Mid')
+    dbclient.insert_event('1', timestamp - timedelta(days=0), 'PRO', '20 - High')
+
+# more than 5 events in one day
+def _scenario_activity_endorsement(dbclient:DBClient):
+    timestamp = datetime.now().astimezone()
+    dbclient.insert_event('1', timestamp - timedelta(hours=10), 'steps', '10000')
+    dbclient.insert_event('1', timestamp - timedelta(hours=8), 'mind', 'Quality of Sleep')
+    dbclient.insert_event('1', timestamp - timedelta(hours=7), 'water', '2 cups')
+    dbclient.insert_event('1', timestamp - timedelta(hours=6), 'mind', 'Energy level')
+    dbclient.insert_event('1', timestamp - timedelta(hours=4), 'medication', 'Done')
+    dbclient.insert_event('1', timestamp - timedelta(hours=2), 'PRO', '5 - Low')
+
+scenarios = {
+    'inactivity': _scenario_inactivity,
+    'missing-medication': _scenario_missing_medication,
+    'pro-deterioration': _scenario_pro_deterioration,
+    'activity-endorsement': _scenario_activity_endorsement
+}
+
+def _create_scenario(db_client:DBClient, args):
+    if not args.scenario in scenarios.keys():
+        print(f'Unsupported scenario: {args.scenario}')
+        sys.exit(1)
+    
+    scenarios[args.scenario](db_client)
+
 commands = {
     'add-event': _add_event,
     'get-events': _get_events,
     'get-alerts': _get_alerts,
     'clear-events': _clear_events,
     'clear-alerts': _clear_alerts,
-    'clear-all': _clear_all
+    'clear-all': _clear_all,
+    'create-scenario': _create_scenario
 }
 
 def parse_args():
@@ -80,7 +123,7 @@ def parse_args():
         "--command",
         type=str,
         default='get-events',
-        help='Command ["add-event | get-events | get-alerts | clear-events | clear-alerts | clear-all"]',
+        help='Command ["add-event | get-events | get-alerts | create-scenario | clear-events | clear-alerts | clear-all"]',
     )
 
     parser.add_argument(
@@ -115,6 +158,13 @@ def parse_args():
         "--debug",
         action='store_true',
         help='Print debug information'
+    )
+
+    parser.add_argument(
+        "--scenario",
+        type=str,
+        default=None,
+        help='Name of the scenario to create: inactivity | missing-medication | pro-deterioration | activity-endorsement'
     )
 
     return parser.parse_args()

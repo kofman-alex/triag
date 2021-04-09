@@ -1,10 +1,3 @@
--- Populate users
-insert into users values ('1', 'John', 'Smith', 'CRONs');
-insert into users values ('2', 'Tom', 'Green', 'CRONs');
-insert into users values ('3', 'Merry', 'Wallace', 'CRONs');
-insert into users values ('4', 'Rachel', 'Gray', 'CRONs');
-insert into users values ('5', 'Andrew', 'Curley', 'CRONs');
-
 -- Populate events
 insert into events (user_id, time, type, description) values('1', '2021-02-23T12:25', 'steps', '11000');
 insert into events (user_id, time, type, description) values('2', '2021-02-23T12:25', 'steps', '1000');

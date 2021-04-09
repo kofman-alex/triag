@@ -12,7 +12,7 @@ insert into rules (rule_id, rule_priority, summary, expr, msg) values (
     'missing-medication',
     2, 
     'The user missed to report his medications 3 days in a row', 
-    'select user_id::integer, min_age_by_user.min_age from (select user_id, min(age(now(), time)) as min_age from ${schema}.events where type like ''medication'' group by user_id) min_age_by_user  where min_age_by_user.min_age > interval ''3 days''',
+    'select user_id::integer, min_age_by_user.min_age from (select user_id, min(age(now(), time)) as min_age from ${schema}.events where type like ''medication'' group by user_id) min_age_by_user  where min_age_by_user.min_age >= interval ''3 days''',
     'Hi, just checking in to see that you take your meds'
 );
 
