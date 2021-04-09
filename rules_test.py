@@ -4,7 +4,7 @@ import os
 from datetime import datetime, timedelta
 import rules
 import json
-
+import copy
 
 class TestRules():
     @pytest.fixture(scope='session', autouse=True)
@@ -38,7 +38,8 @@ class TestRules():
         _statements = {
             'create_user': db_conn.prepare(f'insert into {schema}.users values ($1, $2, $3, $4)'),
             'add_event': db_conn.prepare(f'insert into {schema}.events (user_id, time, type, description) values($1, $2, $3, $4)'),
-            'get_alerts_for_user': db_conn.prepare(f'select * from {schema}.alerts where user_id=$1')
+            'get_alerts_for_user': db_conn.prepare(f'select * from {schema}.alerts where user_id=$1'),
+            'create_alert': db_conn.prepare(f'insert into {schema}.alerts (user_id, time, rule_id, msg) values($1::integer, $2::timestamp with time zone, $3, $4)')
         }
 
         yield _statements
@@ -232,3 +233,69 @@ class TestRules():
         alerts = statements.get('get_alerts_for_user').rows(1)
         alerts_as_list = list(alerts)
         assert len(alerts_as_list) == 0
+
+    # if there is an alert of the same type reported within past 12 hours - do not create a duplicate
+    def test_rule_no_duplicates_12h(self, db_conn, config, statements):
+        current_ts = datetime.now().astimezone()
+
+        with db_conn.xact():
+            statements['create_user'](1, 'john', 'smith', 'someprog')
+            statements['add_event']('1', current_ts - timedelta(hours=36), 'steps', '1')
+            statements['create_alert'](1, current_ts - timedelta(hours=7), 'inactivity', 'some message')
+
+        rule_engine = rules.RuleEngine(config)
+        rule_engine.load_rules()
+        rule_engine.execute_rule('inactivity')
+
+        alerts = statements.get('get_alerts_for_user').rows(1)
+        alerts_as_list = list(alerts)
+        assert len(alerts_as_list) == 1
+        # user_id == 1
+        assert alerts_as_list[0][1] == 1 
+        # rule_id == 'inactivity'
+        assert alerts_as_list[0][3] == 'inactivity'
+
+    # if the last alert of the same type reported earlier than 12 hours ago - create a new alert
+    def test_rule_duplicates_after_12h(self, db_conn, config, statements):
+        current_ts = datetime.now().astimezone()
+
+        with db_conn.xact():
+            statements['create_user'](1, 'john', 'smith', 'someprog')
+            statements['add_event']('1', current_ts - timedelta(hours=36), 'steps', '1')
+            statements['create_alert'](1, current_ts - timedelta(hours=38), 'inactivity', 'some message')
+
+        rule_engine = rules.RuleEngine(config)
+        rule_engine.load_rules()
+        rule_engine.execute_rule('inactivity')
+
+        alerts = statements.get('get_alerts_for_user').rows(1)
+        alerts_as_list = list(alerts)
+        assert len(alerts_as_list) == 2
+        # user_id == 1
+        assert alerts_as_list[0][1] == 1 
+        # rule_id == 'inactivity'
+        assert alerts_as_list[0][3] == 'inactivity'
+
+        assert alerts_as_list[1][1] == 1 
+        assert alerts_as_list[1][3] == 'inactivity'
+
+    # verify that the duplicate inteval is configurable
+    def test_rule_no_duplicates_config_interval(self, db_conn, config, statements):
+        current_ts = datetime.now().astimezone()
+
+        with db_conn.xact():
+            statements['create_user'](1, 'john', 'smith', 'someprog')
+            statements['add_event']('1', current_ts - timedelta(hours=36), 'steps', '1')
+            statements['create_alert'](1, current_ts - timedelta(hours=1), 'inactivity', 'some message')
+
+        custom_config = copy.deepcopy(config)
+        # default is 12 hours, - override with '30 minutes'
+        custom_config['duplicateInterval'] = '30 minutes'
+
+        rule_engine = rules.RuleEngine(custom_config)        
+        rule_engine.load_rules()
+        rule_engine.execute_rule('inactivity')
+
+        alerts = statements.get('get_alerts_for_user').rows(1)
+        alerts_as_list = list(alerts)
+        assert len(alerts_as_list) == 2

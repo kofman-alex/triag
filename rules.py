@@ -24,10 +24,16 @@ def parse_args():
 
     return parser.parse_args()
 
+# time interval during which two alerts of the same type and for the same user are considered duplicates
+DEFAULT_DUP_INTERVAL = '12 hours'
+
 class RuleEngine():
     def __init__(self, config):
         self._connect_params = config.get('connectParams')
         self._schema = config.get('schema')
+        self._duplicate_interval = config.get('duplicateInterval')
+        if not self._duplicate_interval:
+            self._duplicate_interval = DEFAULT_DUP_INTERVAL
         self._connection = None
     
     def _connect(self):
@@ -49,7 +55,10 @@ class RuleEngine():
             
             get_rules = self._connection.prepare(f'select * from {self._schema}.rules')
             
-            self._insert_alert = self._connection.prepare(f'insert into {self._schema}.alerts (user_id, time, rule_id, msg) values($1::integer, $2::timestamp with time zone, $3, $4)')
+            self._insert_alert = self._connection.prepare(f"""insert into {self._schema}.alerts (user_id, time, rule_id, msg)
+                select $1, $2, $3, $4
+                where not exists (
+                    select 1 from {self._schema}.alerts where user_id=$1 and $2 - time < interval '{self._duplicate_interval}')""")
 
             self._ruleset = {}
             

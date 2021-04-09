@@ -1,0 +1,10 @@
+{
+    "connectParams": {
+        "user": "POSTGRES DB USER",
+        "password": "PASSWORD",
+        "database": "DATABASE",
+        "unix": "SOCKET_PATH"
+    },
+    "schema": "test",
+    "duplicateInterval": "12 hours"
+}
