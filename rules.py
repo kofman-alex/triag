@@ -91,7 +91,7 @@ class RuleEngine():
             for res in rule.get('expr').rows():
                 logging.debug(f'Insert alert (user_id={res[0]}, time={timestamp.strftime("%Y-%m-%dT%H:%M:%S%z")}, rule_id={rule.get("rule_id")}, msg={rule.get("msg")}')
 
-                self._insert_alert(res[0], timestamp, rule.get('rule_id'), rule.get('msg'))
+                self._insert_alert(int(res[0]), timestamp, rule.get('rule_id'), rule.get('msg'))
             
         logging.debug('done.')
 

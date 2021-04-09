@@ -3,10 +3,16 @@ import postgresql
 import os
 from datetime import datetime, timedelta
 import rules
+import json
+
 
 class TestRules():
     @pytest.fixture(scope='session', autouse=True)
-    def config(self):
+    def config(self, config_file):
+        if config_file:
+            with open(config_file) as cf:
+                return json.load(cf)
+
         _config = {
             'connectParams': {
                 'user': os.environ.get('USER'),
@@ -16,16 +22,14 @@ class TestRules():
             },
             'schema': os.environ.get('SCHEMA')
         }
-        yield _config
+        return _config
 
     @pytest.fixture(scope='class', autouse=True)
     def db_conn(self, config):
         db = postgresql.open(**config.get('connectParams'))
         yield db
 
-        print('Closing the database connection...')
         db.close()
-        print('Done.')
 
     @pytest.fixture(scope='class', autouse=True)
     def statements(self, db_conn, config):
@@ -42,24 +46,35 @@ class TestRules():
     # FIXME need to take care of the schema which is currently not parameterized in the rules sql file
     # @pytest.fixture(scope='class', autouse=True)
     # def add_rules(self, db_conn, config):
-    #     with open('./setup/create_rules.sql') as rules_sql_file:
-    #         sql_commands = rules_sql_file.read().split(';')
-    #         map(lambda cmd: db_conn.execute(cmd), sql_commands)
+    #     schema = config.get('schema')
+    #     sql_commands = []
 
-    #     yield
-    #     trunc_rules = db_conn.prepare(f'truncate {config.get("schema")}.rules cascade')                
+    #     with open('./setup/create_rules.sql') as rules_sql_file:
+    #         sql_commands = list(map(lambda s: s.strip(), rules_sql_file.read().split(';')))
+        
+    #     with db_conn.xact():
+    #         try:
+    #             map(lambda cmd: db_conn.execute(cmd), sql_commands)
+    #         except:
+    #             e = sys.exc_info()[1]
+    #             raise Exception(e)
 
 
     @pytest.fixture(autouse=True)       
     def cleanup_tables(self, db_conn, config):
+        pass
         yield
+        
         trunc_events = db_conn.prepare(f'truncate {config.get("schema")}.events cascade')
         trunc_alerts = db_conn.prepare(f'truncate {config.get("schema")}.alerts cascade')
         trunc_users = db_conn.prepare(f'truncate {config.get("schema")}.users cascade')
+        # trunc_rules = db_conn.prepare(f'truncate {config.get("schema")}.rules cascade')
 
         trunc_events()
         trunc_alerts()
         trunc_users()
+        # trunc_rules()
+
 
     # verify empty alerts after setting up the test
     def test_alerts(self, db_conn, config):
@@ -174,6 +189,45 @@ class TestRules():
         rule_engine = rules.RuleEngine(config)
         rule_engine.load_rules()
         rule_engine.execute_rule('activity-endorsement')
+
+        alerts = statements.get('get_alerts_for_user').rows(1)
+        alerts_as_list = list(alerts)
+        assert len(alerts_as_list) == 0
+
+    # PRO deterioration - increasing PRO values over the last 3 days - the rule must fire
+    def test_rule_pro_deterioration_fired(self, db_conn, config, statements):
+        current_ts = datetime.now().astimezone()
+
+        with db_conn.xact():
+            statements['create_user'](1, 'john', 'smith', 'someprog')
+            statements['add_event']('1', current_ts - timedelta(days=2), 'PRO', '5 - Low')
+            statements['add_event']('1', current_ts - timedelta(days=1), 'PRO', '15 - Mid')
+            statements['add_event']('1', current_ts - timedelta(days=0), 'PRO', '20 - Critical')
+
+        rule_engine = rules.RuleEngine(config)
+        rule_engine.load_rules()
+        rule_engine.execute_rule('pro-deterioration')
+
+        alerts = statements.get('get_alerts_for_user').rows(1)
+        alerts_as_list = list(alerts)
+        assert len(alerts_as_list) == 1
+        assert alerts_as_list[0][1] == 1 
+        # rule_id == 'activity-endorsement'
+        assert alerts_as_list[0][3] == 'pro-deterioration'
+
+    # PRO deterioration - increasing PRO values over the last 3 days - the rule must NOT fire
+    def test_rule_pro_deterioration_not_fired(self, db_conn, config, statements):
+        current_ts = datetime.now().astimezone()
+
+        with db_conn.xact():
+            statements['create_user'](1, 'john', 'smith', 'someprog')
+            statements['add_event']('1', current_ts - timedelta(days=2), 'PRO', '15 - Mid')
+            statements['add_event']('1', current_ts - timedelta(days=1), 'PRO', '15 - Mid')
+            statements['add_event']('1', current_ts - timedelta(days=0), 'PRO', '10 - Low')
+
+        rule_engine = rules.RuleEngine(config)
+        rule_engine.load_rules()
+        rule_engine.execute_rule('pro-deterioration')
 
         alerts = statements.get('get_alerts_for_user').rows(1)
         alerts_as_list = list(alerts)
