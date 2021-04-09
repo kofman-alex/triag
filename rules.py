@@ -56,9 +56,9 @@ class RuleEngine():
             get_rules = self._connection.prepare(f'select * from {self._schema}.rules')
             
             self._insert_alert = self._connection.prepare(f"""insert into {self._schema}.alerts (user_id, time, rule_id, msg)
-                select $1, $2, $3, $4
+                select $1, $2, $3::varchar(50), $4
                 where not exists (
-                    select 1 from {self._schema}.alerts where user_id=$1 and $2 - time < interval '{self._duplicate_interval}')""")
+                    select 1 from {self._schema}.alerts where user_id=$1 and rule_id like $3 and $2 - time < interval '{self._duplicate_interval}')""")
 
             self._ruleset = {}
             
