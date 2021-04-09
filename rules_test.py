@@ -4,7 +4,7 @@ import os
 from datetime import datetime, timedelta
 import rules
 import json
-
+import copy
 
 class TestRules():
     @pytest.fixture(scope='session', autouse=True)
@@ -278,3 +278,24 @@ class TestRules():
 
         assert alerts_as_list[1][1] == 1 
         assert alerts_as_list[1][3] == 'inactivity'
+
+    # verify that the duplicate inteval is configurable
+    def test_rule_no_duplicates_config_interval(self, db_conn, config, statements):
+        current_ts = datetime.now().astimezone()
+
+        with db_conn.xact():
+            statements['create_user'](1, 'john', 'smith', 'someprog')
+            statements['add_event']('1', current_ts - timedelta(hours=36), 'steps', '1')
+            statements['create_alert'](1, current_ts - timedelta(hours=1), 'inactivity', 'some message')
+
+        custom_config = copy.deepcopy(config)
+        # default is 12 hours, - override with '30 minutes'
+        custom_config['duplicateInterval'] = '30 minutes'
+
+        rule_engine = rules.RuleEngine(custom_config)        
+        rule_engine.load_rules()
+        rule_engine.execute_rule('inactivity')
+
+        alerts = statements.get('get_alerts_for_user').rows(1)
+        alerts_as_list = list(alerts)
+        assert len(alerts_as_list) == 2
