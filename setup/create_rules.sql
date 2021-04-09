@@ -29,7 +29,7 @@ insert into rules (rule_id, rule_priority, summary, expr, msg) values (
                     where current_timestamp - time < interval ''3 days'' and type=''PRO'' 
                 ) as values
             ) as values
-        ) as values group by user_id) as values where slope > 0;',
+        ) as values group by user_id) as values where slope > 0',
     'Patient''s situation deteriorating'
 );
 
