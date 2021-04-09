@@ -178,3 +178,23 @@ class TestRules():
         alerts = statements.get('get_alerts_for_user').rows(1)
         alerts_as_list = list(alerts)
         assert len(alerts_as_list) == 0
+
+    def test_rule_pro_deterioration_fired(self, db_conn, config, statements):
+        current_ts = datetime.now().astimezone()
+
+        with db_conn.xact():
+            statements['create_user'](1, 'john', 'smith', 'someprog')
+            statements['add_event']('1', current_ts - timedelta(days=2), 'PRO', '5 - Low')
+            statements['add_event']('1', current_ts - timedelta(days=1), 'PRO', '15 - Mid')
+            statements['add_event']('1', current_ts - timedelta(days=2), 'PRO', '20 - Critical')
+
+        rule_engine = rules.RuleEngine(config)
+        rule_engine.load_rules()
+        rule_engine.execute_rule('pro-deterioration')
+
+        alerts = statements.get('get_alerts_for_user').rows(1)
+        alerts_as_list = list(alerts)
+        assert len(alerts_as_list) == 1
+        assert alerts_as_list[0][1] == 1 
+        # rule_id == 'activity-endorsement'
+        assert alerts_as_list[0][3] == 'pro-deterioration'

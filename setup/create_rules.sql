@@ -16,13 +16,22 @@ insert into rules (rule_id, rule_priority, summary, expr, msg) values (
     'Hi, just checking in to see that you take your meds'
 );
 
--- insert into rules (rule_priority, summary, expr, msg) values (
---     'pro-deterioration',
---     3, 
---     'PRO rating is geetting higher 3 days in a row', 
---     'TBD',
---     'Patient''s situation deteriorating'
--- );
+insert into rules (rule_id, rule_priority, summary, expr, msg) values (
+    'pro-deterioration',
+    3, 
+    'PRO rating is getting higher 3 days in a row', 
+    'select user_id, slope from (
+        select regr_slope(extract(epoch from time), value) slope, user_id from (
+            select to_number(value[1], ''999d99'') as value, user_id, time from (
+                select generate_subscripts(value, 1) as s, value, user_id, time from
+                (
+                    select regexp_matches(description, ''(\d+)\s-\s\w+'') as value, user_id, time from ${schema}.events 
+                    where current_timestamp - time < interval ''3 days'' and type=''PRO'' 
+                ) as values
+            ) as values
+        ) as values group by user_id) as values where slope > 0;',
+    'Patient''s situation deteriorating'
+);
 
 insert into rules (rule_id, rule_priority, summary, expr, msg) values (
     'activity-endorsement',
