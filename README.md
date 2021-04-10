@@ -99,6 +99,7 @@ Run `python triagctl --help` to see the syntax and the available commands.
 usage: triagctl.py [-h] [--config CONFIG] [--command COMMAND]
                    [--user_id USER_ID] [--ts TS] [--type TYPE]
                    [--description DESCRIPTION] [--debug] [--scenario SCENARIO]
+                   [--rule_spec RULE_SPEC] [--rule_id RULE_ID]
 
 TRIAG Command Line Tool
 
@@ -107,7 +108,7 @@ optional arguments:
   --config CONFIG       Configuration file (JSON)
   --command COMMAND     Command ["add-event | get-events | get-alerts |
                         create-scenario | clear-events | clear-alerts | clear-
-                        all"]
+                        all | add-rule"]
   --user_id USER_ID     User ID
   --ts TS               Timestamp (yyyy-mm-ddThh:mm:ss)
   --type TYPE           Event type
@@ -116,9 +117,50 @@ optional arguments:
   --debug               Print debug information
   --scenario SCENARIO   Name of the scenario to create: inactivity | missing-
                         medication | pro-deterioration | activity-endorsement
+  --rule_spec RULE_SPEC
+                        Path to the rule spec (JSON)
+  --rule_id RULE_ID     Rule ID
 ```
 
 For example of the config file see [config.json](config.template.json) template.
+
+## Examples
+
+1. Add an event
+
+   ```sh
+    python triagctl.py --command add-event --user_id=1 --ts=2021-03-23T13:02:22+0300 --type=medication --description=Done
+   ```
+
+2. Print events
+
+   ```sh
+    python triagctl.py --command=get-events
+   ```
+
+3. Print alerts
+
+   ```sh
+    python triagctl.py --command=get-alerts
+   ```
+
+4. Add a new rule
+
+   ```sh
+    python triagctl.py --command=add-rule --rule_spec=test_data/sample_rule.json
+   ```
+
+5. Delete a rule
+
+   ```sh
+    python triagctl.py --command=delete-rule --rule_id=greeting
+   ```
+
+6. Print rules
+
+   ```sh
+    python triagctl.py --command=get-rules
+   ```
 
 ## Architecture
 
