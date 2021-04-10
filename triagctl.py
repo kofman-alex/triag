@@ -74,6 +74,14 @@ def _add_rule(dbclient:DBClient, args):
     dbclient.insert_rule(spec.get('id'), spec.get('priority'), spec.get('summary'), expr, spec.get('msg'))
     print('Done.')
 
+def _delete_rule(dbclient:DBClient, args):
+    if not args.rule_id:
+        print('rule_id argument is missing')
+        sys.exit(1)
+
+    print(f'Deleting rule \'{args.rule_id}\'...')
+    dbclient.delete_rule(args.rule_id)
+    print('Done.')
 
 
 
@@ -127,7 +135,8 @@ commands = {
     'clear-alerts': _clear_alerts,
     'clear-all': _clear_all,
     'create-scenario': _create_scenario,
-    'add-rule': _add_rule
+    'add-rule': _add_rule,
+    'delete-rule': _delete_rule
 }
 
 def parse_args():
@@ -195,6 +204,13 @@ def parse_args():
         type=str,
         default=None,
         help='Path to the rule spec (JSON)'
+    )
+
+    parser.add_argument(
+        "--rule_id",
+        type=str,
+        default=None,
+        help='Rule ID'
     )
 
 
