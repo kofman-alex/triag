@@ -1,0 +1,9 @@
+{
+    "id": "greeting",
+    "priority": 4,
+    "summary": "Greeting",
+    "expr": [
+        "select user_id from ${schema}.users" 
+    ],
+    "msg": "Hello there!"
+}

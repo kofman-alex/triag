@@ -55,6 +55,28 @@ def _clear_alerts(dbclient:DBClient, args):
 def _clear_all(dbclient:DBClient, args):
     dbclient.clear_all()
 
+def _rule_exists(rule_id:str, rules):
+    return len(list(filter(lambda rule: rule[0] == rule_id, rules))) > 0
+
+def _add_rule(dbclient:DBClient, args):
+    spec = None
+    
+    with open(args.rule_spec) as spec_file:
+        spec = json.load(spec_file)
+
+    expr = '\n'.join(spec.get('expr'))
+    
+    if _rule_exists(spec.get('id'), dbclient.get_rules()):
+        print(f'Rule \'{spec.get("id")}\' already exists.')
+        sys.exit(1)
+
+    print(f'Adding rule \'{spec.get("id")}\'...')
+    dbclient.insert_rule(spec.get('id'), spec.get('priority'), spec.get('summary'), expr, spec.get('msg'))
+    print('Done.')
+
+
+
+
 # 25 hours of inactivity
 def _scenario_inactivity(dbclient:DBClient):
     timestamp = datetime.now().astimezone()
@@ -104,7 +126,8 @@ commands = {
     'clear-events': _clear_events,
     'clear-alerts': _clear_alerts,
     'clear-all': _clear_all,
-    'create-scenario': _create_scenario
+    'create-scenario': _create_scenario,
+    'add-rule': _add_rule
 }
 
 def parse_args():
@@ -123,7 +146,7 @@ def parse_args():
         "--command",
         type=str,
         default='get-events',
-        help='Command ["add-event | get-events | get-alerts | create-scenario | clear-events | clear-alerts | clear-all"]',
+        help='Command ["add-event | get-events | get-alerts | create-scenario | clear-events | clear-alerts | clear-all | add-rule"]',
     )
 
     parser.add_argument(
@@ -166,6 +189,14 @@ def parse_args():
         default=None,
         help='Name of the scenario to create: inactivity | missing-medication | pro-deterioration | activity-endorsement'
     )
+
+    parser.add_argument(
+        "--rule_spec",
+        type=str,
+        default=None,
+        help='Path to the rule spec (JSON)'
+    )
+
 
     return parser.parse_args()
 
