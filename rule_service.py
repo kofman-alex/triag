@@ -26,10 +26,9 @@ def init_rule_engine():
 
     rule_engine = rules.RuleEngine(config)
 
-    rule_engine.load_rules()
-
 @app.route('/execute_ruleset', methods=['GET'])
 def execute_ruleset():
+    rule_engine.load_rules()
     rule_engine.execute_ruleset()
     return {'status': 'OK'}
 
