@@ -39,7 +39,12 @@ pip install -r requirements_test.txt
 ### Running the rule service locally
 
 ```sh
-USER=<USER> PASSWORD=<PASSWORD> DATABASE=<DATABASE> UNIX_SOCKET=<UNIX_SOCKET_PATH> SCHEMA=<SCHEMA> python rule_service.py
+export USER=<USER> 
+export PASSWORD=<PASSWORD>
+export DATABASE=<DATABASE>
+export UNIX_SOCKET=<UNIX_SOCKET_PATH>
+export SCHEMA=<SCHEMA>
+python rule_service.py
 ```
 
 To execute the rule set on the contents of the database:
@@ -59,8 +64,61 @@ The valid response would be:
 Testing the rule engine and rules correctness:
 
 ```sh
-USER=<USER> PASSWORD=<PASSWORD> DATABASE=<DATABASE> UNIX_SOCKET=<UNIX_SOCKET_PATH> SCHEMA=<SCHEMA> pytest
+export USER=<USER> 
+export PASSWORD=<PASSWORD>
+export DATABASE=<DATABASE>
+export UNIX_SOCKET=<UNIX_SOCKET_PATH>
+export SCHEMA=<SCHEMA>
+pytest
 ```
+
+Instead of environment variables, the configuration can also be specified in a json file (see [example](config.template.json)).
+The command line would be as follows:
+
+```sh
+pytest [--config=<config file>]
+```
+
+if `--config` option not explicitly set, then the default path is `secrets/config.json`.
+
+## Trigger a remote rule service
+
+A remote instance of the rule service can be invoked by a GET HTTP request, as follows:
+
+```sh
+curl https://host:port/execute_ruleset
+```
+
+## Command Line Tool
+
+You can use the `triagctl` command line tool to manage and test the service.
+
+Run `python triagctl --help` to see the syntax and the available commands.
+
+```sh
+usage: triagctl.py [-h] [--config CONFIG] [--command COMMAND]
+                   [--user_id USER_ID] [--ts TS] [--type TYPE]
+                   [--description DESCRIPTION] [--debug] [--scenario SCENARIO]
+
+TRIAG Command Line Tool
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --config CONFIG       Configuration file (JSON)
+  --command COMMAND     Command ["add-event | get-events | get-alerts |
+                        create-scenario | clear-events | clear-alerts | clear-
+                        all"]
+  --user_id USER_ID     User ID
+  --ts TS               Timestamp (yyyy-mm-ddThh:mm:ss)
+  --type TYPE           Event type
+  --description DESCRIPTION
+                        Event description
+  --debug               Print debug information
+  --scenario SCENARIO   Name of the scenario to create: inactivity | missing-
+                        medication | pro-deterioration | activity-endorsement
+```
+
+For example of the config file see [config.json](config.template.json) template.
 
 ## Architecture
 
