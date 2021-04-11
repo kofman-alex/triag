@@ -12,11 +12,11 @@ event_header_bottom_template = ' {:>10} + {:20s} + {:^25s} + {:20s} + {:50s} '
 header_events = f'{event_row_template.format("event_id", "user_id", "time", "type", "description")}\n\
 {event_header_bottom_template.format("-"*10,"-"*20,"-"*25,"-"*20,"-"*50)}'
 
-alert_row_template = ' {:>10} | {:20d} | {:^25s} | {:20s} | {:60s} '
-alert_header_bottom_template = ' {:>10} + {:20s} + {:^25s} + {:20s} + {:60s} '
+alert_row_template = ' {:>10} | {:20s} | {:^25s} | {:20s} | {:60s} | {:8s} '
+alert_header_bottom_template = ' {:>10} + {:20s} + {:^25s} + {:20s} + {:60s} + {:8s} '
 
-header_alerts = f'{event_row_template.format("alert_id", "user_id", "time", "rule_id", "msg")}\n\
-{alert_header_bottom_template.format("-"*10,"-"*20,"-"*25,"-"*20,"-"*60)}'
+header_alerts = f'{alert_row_template.format("alert_id", "user_id", "time", "rule_id", "msg", "priority")}\n\
+{alert_header_bottom_template.format("-"*10,"-"*20,"-"*25,"-"*20,"-"*60,"-"*8)}'
 
 header_events = f'{event_row_template.format("event_id", "user_id", "time", "type", "description")}\n\
 {event_header_bottom_template.format("-"*10,"-"*20,"-"*25,"-"*20,"-"*50)}'
@@ -31,7 +31,7 @@ def event2str(event):
     return event_row_template.format(event[0], event[1], event[2].replace(microsecond=0).isoformat(), event[3], event[4])
 
 def alert2str(alert):
-    return alert_row_template.format(alert[0], alert[1], alert[2].replace(microsecond=0).isoformat(), alert[3], alert[4])
+    return alert_row_template.format(alert[0], str(alert[1]), alert[2].replace(microsecond=0).isoformat(), alert[3], alert[4], str(alert[5]))
 
 def rule2str(rule):
     return rule_row_template.format(rule[0], str(rule[1]), rule[2], rule[3])
