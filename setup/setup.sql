@@ -31,5 +31,6 @@ create table alerts (
     user_id integer references users(user_id),
     time timestamp with time zone,
     rule_id varchar(50) references rules(rule_id),
-    msg varchar(255)
+    msg varchar(255),
+    rule_priority smallint
 );

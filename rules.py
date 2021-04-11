@@ -74,7 +74,7 @@ class RuleEngine():
         for res in self._dbclient.execute_rule(rule['expr']):
             logging.debug(f'Add alert (user_id={res[0]}, time={timestamp.strftime("%Y-%m-%dT%H:%M:%S%z")}, rule_id={rule.get("rule_id")}, msg={rule.get("msg")}')
             
-            self._dbclient.add_alert(user_id=res[0], timestamp=timestamp, rule_id=rule['rule_id'], msg=rule.get('msg'))
+            self._dbclient.add_alert(user_id=res[0], timestamp=timestamp, rule_id=rule['rule_id'], msg=rule.get('msg'), priority=rule.get('rule_priority'))
             
         logging.debug('done.')
 

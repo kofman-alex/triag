@@ -102,6 +102,7 @@ class TestRules():
         assert alerts_as_list[0][1] == 1 
         # rule_id == 'inactivity'
         assert alerts_as_list[0][3] == 'inactivity'
+        assert alerts_as_list[0][5] == 1
     
     # last activity 12 hours ago - rule about lack of activity in last 24 hours MUST NOT fire
     def test_rule_no_activity_in_24h_not_fired(self, db_conn, config, statements):

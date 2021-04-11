@@ -40,8 +40,8 @@ class DBClient():
         self._get_rules_with_expr = self._connection.prepare(f'select * from {schema}.rules')
         self._delete_rule = self._connection.prepare(f'delete from {schema}.rules where rule_id=$1')
         self._insert_alert = self._connection.prepare(
-            f"""insert into {schema}.alerts (user_id, time, rule_id, msg)
-                select $1, $2, $3::varchar(50), $4
+            f"""insert into {schema}.alerts (user_id, time, rule_id, msg, rule_priority)
+                select $1, $2, $3::varchar(50), $4, $5
                 where not exists (
                     select 1 from {schema}.alerts where user_id=$1 and rule_id like $3 and $2 - time < interval '{duplicate_interval}')""")
 
@@ -59,8 +59,8 @@ class DBClient():
     def execute_rule(self, executable_rule):
         return executable_rule.rows()
 
-    def add_alert(self, user_id, timestamp, rule_id, msg):
-        self._insert_alert(int(user_id), timestamp, rule_id, msg)
+    def add_alert(self, user_id, timestamp, rule_id, msg, priority):
+        self._insert_alert(int(user_id), timestamp, rule_id, msg, int(priority))
 
     def insert_event(self, user_id:int, ts: datetime, event_type:str, description:str):
         logging.debug(f'Insert event user_id={user_id}, time={ts}, type={event_type}, description={description}')
